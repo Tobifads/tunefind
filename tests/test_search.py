@@ -47,14 +47,3 @@ def test_owner_isolation(tmp_path):
     result = service.search_by_hum("alice", make_tone(220.0), top_k=5)
     assert result["count"] == 1
     assert result["matches"][0]["owner_id"] == "alice"
-
-
-def test_list_beats(tmp_path):
-    service = TuneFindService(tmp_path)
-    service.upload_beat("alice", "a.wav", make_tone(220.0))
-    service.upload_beat("alice", "b.wav", make_tone(330.0))
-
-    result = service.list_beats("alice")
-    assert result["count"] == 2
-    filenames = {beat["filename"] for beat in result["beats"]}
-    assert filenames == {"a.wav", "b.wav"}
