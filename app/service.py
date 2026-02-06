@@ -43,7 +43,3 @@ class TuneFindService:
         query = extract_features(file_bytes)
         matches = self.index.search(query.vector, owner_id=owner_id, top_k=top_k)
         return {"matches": matches, "count": len(matches)}
-
-    def list_beats(self, owner_id: str) -> dict:
-        beats = self.index.list_beats(owner_id)
-        return {"beats": beats, "count": len(beats)}

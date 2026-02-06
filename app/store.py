@@ -51,15 +51,3 @@ class BeatIndex:
             }
             for score, item in scored[:top_k]
         ]
-
-    def list_beats(self, owner_id: str) -> list[dict]:
-        return [
-            {
-                "beat_id": item.beat_id,
-                "filename": item.filename,
-                "owner_id": item.owner_id,
-                "duration_s": item.duration_s,
-            }
-            for item in self.records
-            if item.owner_id == owner_id
-        ]
