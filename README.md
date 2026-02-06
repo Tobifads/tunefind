@@ -110,13 +110,90 @@ This repository now includes a **working backend core MVP**:
 
 ## Quickstart
 
+Install everything (Python + system dependencies) in one command:
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+python tunefind_cli.py setup-deps
 ```
 
-## Local UI
+## Default Dependencies
+
+### One-Step Installer (macOS, Linux, Windows)
+
+Run:
+
+```bash
+python tunefind_cli.py setup-deps
+```
+
+What it installs:
+
+- Python dependencies from `requirements.txt` (including BPM dependencies).
+- `ffmpeg` system binary (for MP3/browser audio decode).
+- `keyfinder-cli` + libKeyFinder (for key detection).
+
+You can install only keyfinder/ffmpeg system dependencies with:
+
+```bash
+python tunefind_cli.py setup-keyfinder
+```
+
+### System Dependencies (MP3 support)
+
+MP3 decoding requires a system `ffmpeg` install. This cannot be installed via `pip`, so each OS needs one step:
+
+- macOS (Homebrew): `brew install ffmpeg`
+- Windows (Winget): `winget install Gyan.FFmpeg`
+- Windows (Chocolatey): `choco install ffmpeg`
+- Linux (Debian/Ubuntu): `sudo apt-get install ffmpeg`
+- Linux (Fedora): `sudo dnf install ffmpeg`
+- Linux (Arch): `sudo pacman -S ffmpeg`
+- Android (Termux): `pkg install ffmpeg`
+
+If `ffmpeg` is missing, MP3 uploads will fail with a clear error. WAV still works.
+
+### Key Detection (libKeyFinder / keyfinder-cli)
+
+`keyfinder-cli` is required by default and upload will fail if it is missing.
+
+High-level steps:
+
+1. Install libKeyFinder (build from source using CMake/FFTW or use a package manager). On macOS, Homebrew provides `brew install libkeyfinder`.
+2. Build and install `keyfinder-cli` (requires `ffmpeg` and libKeyFinder).
+
+After install, verify it is on PATH:
+
+```bash
+keyfinder-cli --help
+```
+
+You can also verify with `http://127.0.0.1:8000/diagnostics` (it will show `keyfinder` path).
+
+**License note:** libKeyFinder and keyfinder-cli are GPL-3.0 licensed. If you plan to distribute this project, review GPL obligations.
+
+### Rebuild Environment (Clean Install)
+
+If uploads/search fail or you suspect a broken environment, do a clean rebuild:
+
+```bash
+deactivate 2>/dev/null || true
+rm -rf .venv
+python -m venv .venv
+source .venv/bin/activate
+python tunefind_cli.py setup-deps
+```
+
+Then restart the server:
+
+```bash
+python app/server.py
+```
+
+You can verify system support by opening `http://127.0.0.1:8000/diagnostics`.
+
+### Local UI
 
 You can run a simple local UI powered by a lightweight HTTP server:
 
@@ -146,5 +223,12 @@ pytest -q
 
 ### Notes
 
-- This MVP supports **16-bit PCM WAV** only for simplicity.
+- This MVP supports **WAV**, **MP3**, and common browser recording formats like **WEBM/OGG/M4A** (non-WAV formats require `pydub` and a local `ffmpeg` install).
+- BPM and key are **auto-estimated** on upload. BPM uses a wavelet-based detector (GPL-licensed algorithm). Key detection uses `keyfinder-cli` (libKeyFinder).
+- **License note:** The BPM detector algorithm integrated here is GPL-licensed. If you plan to distribute this project, review GPL obligations.
 - The service/index layers are intentionally simple so you can swap in stronger ML embeddings later without changing product behavior.
+
+### Upload Management
+
+- You can list uploads per owner in the UI (Your Uploads section).
+- You can delete all uploads for an owner using the **Delete All Uploads** button.

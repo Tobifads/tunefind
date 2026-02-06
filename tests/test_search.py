@@ -1,7 +1,12 @@
 import io
 import math
+import os
+import stat
 import wave
 
+import pytest
+
+import app.audio as audio
 from app.service import TuneFindService
 
 
@@ -20,6 +25,18 @@ def make_tone(freq: float, seconds: float = 1.0, sr: int = 8000) -> bytes:
         wav.setframerate(sr)
         wav.writeframes(bytes(frames))
     return buf.getvalue()
+
+
+@pytest.fixture(autouse=True)
+def mock_keyfinder_cli(monkeypatch, tmp_path):
+    if os.name == "nt":
+        script = tmp_path / "mock_keyfinder.cmd"
+        script.write_text("@echo off\r\necho C\r\n")
+    else:
+        script = tmp_path / "mock_keyfinder"
+        script.write_text("#!/usr/bin/env sh\necho C\n")
+        script.chmod(script.stat().st_mode | stat.S_IEXEC)
+    monkeypatch.setenv("TUNEFIND_KEYFINDER_PATH", str(script))
 
 
 def test_upload_and_search_returns_expected_top_match(tmp_path):
@@ -47,3 +64,10 @@ def test_owner_isolation(tmp_path):
     result = service.search_by_hum("alice", make_tone(220.0), top_k=5)
     assert result["count"] == 1
     assert result["matches"][0]["owner_id"] == "alice"
+
+
+def test_upload_requires_keyfinder(tmp_path, monkeypatch):
+    monkeypatch.setattr(audio, "_find_keyfinder_cli", lambda: None)
+    service = TuneFindService(tmp_path)
+    with pytest.raises(RuntimeError, match="keyfinder-cli is required"):
+        service.upload_beat("alice", "a.wav", make_tone(220.0))

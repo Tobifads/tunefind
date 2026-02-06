@@ -48,6 +48,9 @@
       margin: 12px 0 6px;
       font-weight: 600;
     }
+    label input[type="checkbox"] {
+      margin-right: 8px;
+    }
     input[type="text"], input[type="file"], input[type="number"] {
       width: 100%;
       padding: 10px 12px;
@@ -92,6 +95,104 @@
       color: #7dd3fc;
       font-size: 0.95rem;
     }
+    .record-row {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .record-btn {
+      background: #ff6a6a;
+      color: #1b0d0d;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .record-btn.recording {
+      background: #16a34a;
+      color: #05150b;
+    }
+    .record-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .record-hint {
+      color: #a5a7b4;
+      font-size: 0.95rem;
+    }
+    .record-preview {
+      margin-top: 12px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .record-preview audio {
+      width: min(360px, 100%);
+    }
+    .record-use {
+      background: #6d5dfc;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .wave-wrap {
+      margin-top: 12px;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(56, 189, 248, 0.18), transparent 45%),
+        radial-gradient(circle at 85% 0%, rgba(34, 211, 238, 0.12), transparent 40%),
+        linear-gradient(135deg, #0b1220, #101827);
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      padding: 10px;
+      box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.05), 0 12px 24px rgba(0, 0, 0, 0.35);
+    }
+    #waveform {
+      width: 100%;
+      height: 90px;
+      display: block;
+    }
+    .wave-hint {
+      margin-top: 6px;
+      color: #a5a7b4;
+      font-size: 0.9rem;
+    }
+    .upload-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+    .search-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+    .danger {
+      background: #ef4444;
+      color: #fff;
+    }
+    .danger.small {
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+    .ghost {
+      background: transparent;
+      color: #cbd5f5;
+      border: 1px solid #2b2f3f;
+    }
   </style>
 </head>
 <body>
@@ -107,8 +208,13 @@
         <label for="upload-owner">Owner ID</label>
         <input id="upload-owner" name="owner_id" type="text" placeholder="producer123" required />
 
-        <label for="upload-file">Beat WAV</label>
-        <input id="upload-file" name="file" type="file" accept=".wav" required />
+        <label for="upload-file">Beat WAV/MP3</label>
+        <input id="upload-file" name="file" type="file" accept=".wav,.mp3,.m4a,.ogg,.webm" multiple required />
+
+        <label for="upload-dedupe">
+          <input id="upload-dedupe" name="skip_duplicates" type="checkbox" value="1" checked />
+          Skip duplicate uploads
+        </label>
 
         <button type="submit">Upload Beat</button>
         <div class="status" id="upload-status"></div>
@@ -121,16 +227,51 @@
         <label for="search-owner">Owner ID</label>
         <input id="search-owner" name="owner_id" type="text" placeholder="producer123" required />
 
-        <label for="search-file">Hummed WAV</label>
-        <input id="search-file" name="file" type="file" accept=".wav" required />
+        <label for="search-file">Hummed File (Optional)</label>
+        <input id="search-file" name="file" type="file" accept=".wav,.mp3,.m4a,.ogg,.webm" />
+
+        <div class="record-row">
+          <button type="button" class="record-btn" id="record-btn">
+            <span class="record-dot" aria-hidden="true"></span>
+            <span id="record-label">Start Humming</span>
+          </button>
+          <span class="record-hint" id="record-hint">Mic ready. Press to record.</span>
+        </div>
+        <div class="status" id="record-status"></div>
+        <div class="wave-wrap">
+          <canvas id="waveform" width="560" height="90"></canvas>
+          <div class="wave-hint" id="waveform-hint">Waveform will appear while recording.</div>
+        </div>
+        <div class="record-preview" id="record-preview">
+          <audio id="record-audio" controls></audio>
+          <button type="button" class="record-use" id="record-use">Search With Recording</button>
+        </div>
 
         <label for="search-top">Top K Results</label>
         <input id="search-top" name="top_k" type="number" min="1" max="20" value="5" />
 
-        <button type="submit">Find Matches</button>
+        <div class="search-actions">
+          <button type="submit">Find Matches</button>
+          <button type="button" class="ghost" id="search-reset">Search For Something Else</button>
+        </div>
         <div class="status" id="search-status"></div>
       </form>
       <div class="results" id="results"></div>
+    </section>
+
+    <section>
+      <h2>3) Your Uploads</h2>
+      <form id="uploads-form">
+        <label for="uploads-owner">Owner ID</label>
+        <input id="uploads-owner" name="owner_id" type="text" placeholder="producer123" required />
+
+        <div class="upload-actions">
+          <button type="submit">Load Uploads</button>
+          <button type="button" class="danger" id="delete-uploads" style="display:none;">Delete All Uploads</button>
+        </div>
+        <div class="status" id="uploads-status"></div>
+      </form>
+      <div class="results" id="uploads-results"></div>
     </section>
   </main>
 
@@ -140,45 +281,400 @@
     const searchForm = document.getElementById('search-form');
     const searchStatus = document.getElementById('search-status');
     const results = document.getElementById('results');
+    const uploadsForm = document.getElementById('uploads-form');
+    const uploadsStatus = document.getElementById('uploads-status');
+    const uploadsResults = document.getElementById('uploads-results');
+    const deleteUploadsBtn = document.getElementById('delete-uploads');
+    const searchResetBtn = document.getElementById('search-reset');
+    const recordBtn = document.getElementById('record-btn');
+    const recordLabel = document.getElementById('record-label');
+    const recordHint = document.getElementById('record-hint');
+    const recordStatus = document.getElementById('record-status');
+    const recordPreview = document.getElementById('record-preview');
+    const recordAudio = document.getElementById('record-audio');
+    const recordUse = document.getElementById('record-use');
+    const waveform = document.getElementById('waveform');
+    const waveformHint = document.getElementById('waveform-hint');
+    const waveCtx = waveform ? waveform.getContext('2d') : null;
+    let waveGradient = null;
+
+    let recorder = null;
+    let recordedChunks = [];
+    let recordedBlob = null;
+    let audioCtx = null;
+    let analyser = null;
+    let waveformRaf = null;
+
+    if (!navigator.mediaDevices || !window.MediaRecorder) {
+      recordBtn.disabled = true;
+      recordHint.textContent = 'Recording not supported in this browser.';
+    }
+    if (!window.AudioContext && !window.webkitAudioContext) {
+      waveformHint.textContent = 'Waveform not supported in this browser.';
+    }
+
+    const apiBase = (window.location.port === '8000') ? '' : 'http://127.0.0.1:8000';
+
+    async function readJson(res) {
+      const text = await res.text();
+      try {
+        return JSON.parse(text);
+      } catch (err) {
+        return { error: text || res.statusText || 'Request failed' };
+      }
+    }
+
+    function networkMessage(err) {
+      if (err && err.message && err.message.includes('Failed to fetch')) {
+        return 'Failed to fetch. Is the local server running on http://localhost:8000?';
+      }
+      return err?.message || 'Request failed';
+    }
+
+    function formatDuration(seconds) {
+      const total = Math.max(0, Math.floor(Number(seconds) || 0));
+      const mins = Math.floor(total / 60);
+      const secs = total % 60;
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function resizeWaveCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+      if (!waveform || !waveCtx) {
+        return { width: 0, height: 0 };
+      }
+      const width = waveform.clientWidth || 560;
+      const height = waveform.clientHeight || 90;
+      if (waveform.width !== width * dpr || waveform.height !== height * dpr) {
+        waveform.width = width * dpr;
+        waveform.height = height * dpr;
+        waveCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        waveGradient = null;
+      }
+      return { width, height };
+    }
+
+    function drawRoundedRect(ctx, x, y, w, h, r) {
+      const radius = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + w - radius, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+      ctx.lineTo(x + w, y + h - radius);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+      ctx.lineTo(x + radius, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+    }
+
+    function clearWaveCanvas() {
+      if (!waveCtx) return;
+      const { width, height } = resizeWaveCanvas();
+      waveCtx.clearRect(0, 0, width, height);
+      waveCtx.strokeStyle = 'rgba(125, 211, 252, 0.15)';
+      waveCtx.lineWidth = 1;
+      waveCtx.beginPath();
+      waveCtx.moveTo(0, height / 2);
+      waveCtx.lineTo(width, height / 2);
+      waveCtx.stroke();
+    }
+
+    clearWaveCanvas();
+    window.addEventListener('resize', clearWaveCanvas);
+
+    function renderMatches(matches) {
+      results.innerHTML = '';
+      matches.forEach((match) => {
+        const card = document.createElement('div');
+        card.className = 'result-card';
+        const dur = formatDuration(match.duration_s);
+        card.innerHTML = `
+          <div>
+            <strong>${match.filename}</strong><br />
+            <small>Beat ID: ${match.beat_id}</small>
+          </div>
+          <div>Score: ${match.score}<br /><small>${dur}</small></div>
+        `;
+        results.appendChild(card);
+      });
+    }
+
+    function filenameForBlob(blob) {
+      const type = (blob && blob.type) ? blob.type.toLowerCase() : '';
+      if (type.includes('ogg')) return 'hum.ogg';
+      if (type.includes('webm')) return 'hum.webm';
+      if (type.includes('mp4') || type.includes('m4a') || type.includes('aac')) return 'hum.m4a';
+      return 'hum.webm';
+    }
+
+    function renderMatches(matches) {
+      results.innerHTML = '';
+      matches.forEach((match) => {
+        const card = document.createElement('div');
+        card.className = 'result-card';
+        card.innerHTML = `
+          <div>
+            <strong>${match.filename}</strong><br />
+            <small>Beat ID: ${match.beat_id}</small>
+          </div>
+          <div>Score: ${match.score}</div>
+        `;
+        results.appendChild(card);
+      });
+    }
+
+    async function submitHumBlob(blob) {
+      const ownerId = document.getElementById('search-owner').value.trim();
+      if (!ownerId) {
+        searchStatus.textContent = 'Owner ID is required to search.';
+        return;
+      }
+      searchStatus.textContent = 'Searching...';
+      const data = new FormData(searchForm);
+      data.set('file', blob, filenameForBlob(blob));
+      try {
+        const res = await fetch(`${apiBase}/search`, { method: 'POST', body: data });
+        const payload = await readJson(res);
+        if (!res.ok) throw new Error(payload.error || 'Search failed');
+        searchStatus.textContent = `Found ${payload.count} match(es).`;
+        renderMatches(payload.matches);
+      } catch (err) {
+        searchStatus.textContent = networkMessage(err);
+      }
+    }
 
     uploadForm.addEventListener('submit', async (event) => {
       event.preventDefault();
       uploadStatus.textContent = 'Uploading...';
       const data = new FormData(uploadForm);
       try {
-        const res = await fetch('/upload', { method: 'POST', body: data });
-        const payload = await res.json();
+        const res = await fetch(`${apiBase}/upload`, { method: 'POST', body: data });
+        const payload = await readJson(res);
         if (!res.ok) throw new Error(payload.error || 'Upload failed');
-        uploadStatus.textContent = `Uploaded: ${payload.filename}`;
+        if (payload.uploads) {
+          const skipped = payload.skipped ? payload.skipped.length : 0;
+          const failed = payload.failed ? payload.failed.length : 0;
+          if (payload.count === 0 && skipped > 0 && failed === 0) {
+            uploadStatus.textContent = `All ${skipped} file(s) were duplicates. Uncheck "Skip duplicate uploads" to force re-upload.`;
+          } else if (payload.count === 0 && failed > 0) {
+            uploadStatus.textContent = `Upload failed for ${failed} file(s): ${payload.failed[0].error}`;
+          } else {
+            uploadStatus.textContent = `Uploaded ${payload.count} file(s).${skipped ? ` Skipped ${skipped} duplicate(s).` : ''}${failed ? ` Failed ${failed}.` : ''}`;
+          }
+        } else {
+          if (payload.skipped) {
+            uploadStatus.textContent = `Skipped duplicate: ${payload.duplicate_of}`;
+          } else {
+            uploadStatus.textContent = `Uploaded: ${payload.filename}`;
+          }
+        }
       } catch (err) {
-        uploadStatus.textContent = err.message;
+        uploadStatus.textContent = networkMessage(err);
       }
     });
 
     searchForm.addEventListener('submit', async (event) => {
       event.preventDefault();
       searchStatus.textContent = 'Searching...';
-      results.innerHTML = '';
       const data = new FormData(searchForm);
       try {
-        const res = await fetch('/search', { method: 'POST', body: data });
-        const payload = await res.json();
+        const res = await fetch(`${apiBase}/search`, { method: 'POST', body: data });
+        const payload = await readJson(res);
         if (!res.ok) throw new Error(payload.error || 'Search failed');
         searchStatus.textContent = `Found ${payload.count} match(es).`;
-        payload.matches.forEach((match) => {
+        renderMatches(payload.matches);
+      } catch (err) {
+        searchStatus.textContent = networkMessage(err);
+      }
+    });
+
+    searchResetBtn.addEventListener('click', () => {
+      searchStatus.textContent = '';
+      results.innerHTML = '';
+      recordStatus.textContent = '';
+      recordHint.textContent = 'Mic ready. Press to record.';
+      recordPreview.style.display = 'none';
+      recordedBlob = null;
+      const fileInput = document.getElementById('search-file');
+      if (fileInput) fileInput.value = '';
+    });
+
+    recordBtn.addEventListener('click', async () => {
+      if (recorder && recorder.state === 'recording') {
+        recorder.stop();
+        return;
+      }
+      recordStatus.textContent = '';
+      if (!document.getElementById('search-owner').value.trim()) {
+        recordStatus.textContent = 'Owner ID is required to record and search.';
+        return;
+      }
+      recordPreview.style.display = 'none';
+      recordedBlob = null;
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        recordedChunks = [];
+        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        const source = audioCtx.createMediaStreamSource(stream);
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 1024;
+        analyser.smoothingTimeConstant = 0.85;
+        source.connect(analyser);
+        recorder = new MediaRecorder(stream);
+        recorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) recordedChunks.push(event.data);
+        };
+        recorder.onstop = async () => {
+          stream.getTracks().forEach((track) => track.stop());
+          if (waveformRaf) cancelAnimationFrame(waveformRaf);
+          waveformRaf = null;
+          recordBtn.classList.remove('recording');
+          recordLabel.textContent = 'Start Humming';
+          recordHint.textContent = 'Recording saved. Preview below.';
+          recordedBlob = new Blob(recordedChunks, { type: recorder.mimeType || 'audio/webm' });
+          recordAudio.src = URL.createObjectURL(recordedBlob);
+          recordPreview.style.display = 'flex';
+          waveformHint.textContent = 'Waveform will appear while recording.';
+          clearWaveCanvas();
+        };
+        const bins = new Uint8Array(analyser.frequencyBinCount);
+        waveformHint.textContent = 'Listening...';
+        const draw = () => {
+          waveformRaf = requestAnimationFrame(draw);
+          const { width, height } = resizeWaveCanvas();
+          analyser.getByteFrequencyData(bins);
+          waveCtx.clearRect(0, 0, width, height);
+          if (!waveGradient) {
+            waveGradient = waveCtx.createLinearGradient(0, 0, 0, height);
+            waveGradient.addColorStop(0, '#22d3ee');
+            waveGradient.addColorStop(1, '#38bdf8');
+          }
+          waveCtx.shadowColor = 'rgba(56, 189, 248, 0.35)';
+          waveCtx.shadowBlur = 10;
+          const bars = 48;
+          const step = Math.max(1, Math.floor(bins.length / bars));
+          const barWidth = width / bars;
+          for (let i = 0; i < bars; i += 1) {
+            const value = bins[i * step] / 255;
+            const barHeight = Math.max(4, value * height);
+            const x = i * barWidth + barWidth * 0.2;
+            const y = height - barHeight;
+            const w = barWidth * 0.6;
+            drawRoundedRect(waveCtx, x, y, w, barHeight, 6);
+            waveCtx.fillStyle = waveGradient;
+            waveCtx.fill();
+          }
+          waveCtx.shadowBlur = 0;
+        };
+        draw();
+        recorder.start();
+        recordBtn.classList.add('recording');
+        recordLabel.textContent = 'Stop';
+        recordHint.textContent = 'Recording... Hum now.';
+      } catch (err) {
+        recordStatus.textContent = err?.message || 'Microphone permission denied.';
+      }
+    });
+
+    recordUse.addEventListener('click', async () => {
+      if (!recordedBlob) return;
+      recordStatus.textContent = 'Uploading hum...';
+      await submitHumBlob(recordedBlob);
+      recordStatus.textContent = '';
+    });
+
+    uploadsForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      uploadsStatus.textContent = 'Loading...';
+      uploadsResults.innerHTML = '';
+      const ownerId = document.getElementById('uploads-owner').value.trim();
+      try {
+        const res = await fetch(`${apiBase}/uploads?owner_id=${encodeURIComponent(ownerId)}`);
+        const payload = await readJson(res);
+        if (!res.ok) throw new Error(payload.error || 'Load failed');
+        uploadsStatus.textContent = `Found ${payload.count} upload(s).`;
+        deleteUploadsBtn.style.display = payload.count ? 'inline-flex' : 'none';
+        payload.uploads.forEach((item) => {
           const card = document.createElement('div');
           card.className = 'result-card';
+          const bpm = item.bpm ? `${item.bpm} BPM` : 'BPM: —';
+          const key = item.key ? `Key: ${item.key}` : 'Key: —';
+          const dur = formatDuration(item.duration_s);
           card.innerHTML = `
             <div>
-              <strong>${match.filename}</strong><br />
-              <small>Beat ID: ${match.beat_id}</small>
+              <strong>${item.filename}</strong><br />
+              <small>Beat ID: ${item.beat_id}</small>
             </div>
-            <div>Score: ${match.score}</div>
+            <div>
+              ${dur}<br />
+              <small>${bpm} • ${key}</small>
+            </div>
+            <div>
+              <button type="button" class="danger small" data-delete-id="${item.beat_id}">Delete</button>
+            </div>
           `;
-          results.appendChild(card);
+          uploadsResults.appendChild(card);
         });
       } catch (err) {
-        searchStatus.textContent = err.message;
+        uploadsStatus.textContent = networkMessage(err);
+      }
+    });
+
+    deleteUploadsBtn.addEventListener('click', async () => {
+      const ownerId = document.getElementById('uploads-owner').value.trim();
+      if (!ownerId) {
+        uploadsStatus.textContent = 'Owner ID is required to delete uploads.';
+        return;
+      }
+      if (!confirm(`Delete all uploads for ${ownerId}? This cannot be undone.`)) {
+        return;
+      }
+      uploadsStatus.textContent = 'Deleting...';
+      uploadsResults.innerHTML = '';
+      const data = new FormData();
+      data.set('owner_id', ownerId);
+      data.set('file', new Blob(['delete'], { type: 'text/plain' }), 'delete.txt');
+      try {
+        const res = await fetch(`${apiBase}/uploads/delete`, { method: 'POST', body: data });
+        const payload = await readJson(res);
+        if (!res.ok) throw new Error(payload.error || 'Delete failed');
+        uploadsStatus.textContent = `Deleted ${payload.count} upload(s).`;
+        deleteUploadsBtn.style.display = 'none';
+        uploadsResults.innerHTML = '';
+      } catch (err) {
+        uploadsStatus.textContent = networkMessage(err);
+      }
+    });
+
+    uploadsResults.addEventListener('click', async (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const beatId = target.getAttribute('data-delete-id');
+      if (!beatId) return;
+      const ownerId = document.getElementById('uploads-owner').value.trim();
+      if (!ownerId) {
+        uploadsStatus.textContent = 'Owner ID is required to delete uploads.';
+        return;
+      }
+      if (!confirm('Delete this upload?')) return;
+      const data = new FormData();
+      data.set('owner_id', ownerId);
+      data.set('beat_id', beatId);
+      data.set('file', new Blob(['delete'], { type: 'text/plain' }), 'delete.txt');
+      try {
+        const res = await fetch(`${apiBase}/uploads/delete-one`, { method: 'POST', body: data });
+        const payload = await readJson(res);
+        if (!res.ok) throw new Error(payload.error || 'Delete failed');
+        uploadsStatus.textContent = 'Deleted 1 upload.';
+        const card = target.closest('.result-card');
+        if (card) card.remove();
+        if (!uploadsResults.querySelector('.result-card')) {
+          deleteUploadsBtn.style.display = 'none';
+        }
+      } catch (err) {
+        uploadsStatus.textContent = networkMessage(err);
       }
     });
   </script>
