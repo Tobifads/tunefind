@@ -126,8 +126,6 @@ python app/server.py
 
 Then open `http://localhost:8000` in your browser. The UI lets you upload beats and search by hum.
 
-The flow is **library-first**: producers upload beats over time, and searches always run against the beats already stored for that owner.
-
 Upload a beat:
 
 ```bash

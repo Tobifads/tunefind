@@ -49,19 +49,7 @@ class TuneFindHandler(BaseHTTPRequestHandler):
         if parsed.path in {"/", "/index.html"}:
             return self._send_file(WEB_DIR / "index.html")
         if parsed.path.startswith("/static/"):
-            relative = parsed.path.removeprefix("/static/")
-            return self._send_file(WEB_DIR / "static" / relative)
-        if parsed.path == "/beats":
-            params = urlparse(self.path).query
-            owner_id = ""
-            if params:
-                parts = params.split("=")
-                if len(parts) == 2 and parts[0] == "owner_id":
-                    owner_id = parts[1]
-            if not owner_id:
-                return self._send_json({"error": "owner_id is required"}, status=400)
-            service = self._service()
-            return self._send_json(service.list_beats(owner_id), status=200)
+            return self._send_file(WEB_DIR / parsed.path.removeprefix("/static/"))
         if parsed.path == "/health":
             return self._send_json({"status": "ok"})
         self.send_error(HTTPStatus.NOT_FOUND, "Not found")
