@@ -15,9 +15,7 @@ class TuneFindService:
 
     def upload_beat(self, owner_id: str, filename: str, file_bytes: bytes) -> dict:
         if not filename.lower().endswith(".wav"):
-            raise ValueError(
-                "Only 16-bit PCM .wav files are supported in this MVP. Convert your audio to .wav first."
-            )
+            raise ValueError("Only .wav files are supported in this MVP.")
 
         feats = extract_features(file_bytes)
         beat_id = str(uuid4())
@@ -45,7 +43,3 @@ class TuneFindService:
         query = extract_features(file_bytes)
         matches = self.index.search(query.vector, owner_id=owner_id, top_k=top_k)
         return {"matches": matches, "count": len(matches)}
-
-    def list_beats(self, owner_id: str) -> dict:
-        beats = self.index.list_beats(owner_id)
-        return {"beats": beats, "count": len(beats)}

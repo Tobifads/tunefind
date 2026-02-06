@@ -111,7 +111,6 @@ This repository now includes a **working backend core MVP**:
 ## Quickstart
 
 ```bash
-cd /path/to/tunefind
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -125,13 +124,7 @@ You can run a simple local UI powered by a lightweight HTTP server:
 python app/server.py
 ```
 
-You should see `TuneFind server running on http://0.0.0.0:8000` in your terminal. Then open
-`http://localhost:8000` in your browser. The UI lets you upload beats and search by hum.
-
-The flow is **library-first**: producers upload beats over time, and searches always run against the beats already stored for that owner.
-
-Audio format note: the MVP only accepts **16-bit PCM .wav**. If your files are .mp3, convert them first
-(e.g., `ffmpeg -i input.mp3 -ac 1 -ar 8000 output.wav`).
+Then open `http://localhost:8000` in your browser. The UI lets you upload beats and search by hum.
 
 Upload a beat:
 
