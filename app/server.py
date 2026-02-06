@@ -49,8 +49,7 @@ class TuneFindHandler(BaseHTTPRequestHandler):
         if parsed.path in {"/", "/index.html"}:
             return self._send_file(WEB_DIR / "index.html")
         if parsed.path.startswith("/static/"):
-            relative = parsed.path.removeprefix("/static/")
-            return self._send_file(WEB_DIR / "static" / relative)
+            return self._send_file(WEB_DIR / parsed.path.removeprefix("/static/"))
         if parsed.path == "/health":
             return self._send_json({"status": "ok"})
         self.send_error(HTTPStatus.NOT_FOUND, "Not found")
