@@ -6,7 +6,6 @@ TuneFind is a cloud app concept for music producers:
 - They hum a melody/rhythm pattern.
 - The system returns the closest matching beats from **their own uploaded catalog**.
 
-This repository currently focuses on a **learning-first foundation** so you can understand how to build the product end-to-end.
 
 ## Product Vision
 
